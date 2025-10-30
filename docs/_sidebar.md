@@ -1,0 +1,17 @@
+<!-- docs/_sidebar.md -->
+
+* [User Manual](/)
+** [Data-flow Diagram <span class="new">new</span>](/diagrams/dataflow/README.md)
+** [Entity Relationship Diagram ](/diagrams/entity-relationship/README.md)
+** [Class Diagram](/diagrams/class_diag/README.md)
+** [Mind Maps](/diagrams/mindmap/README.md)
+** [Flowchart](/diagrams/flowchart/README.md)
+** [Sequence](/diagrams/sequence/README.md)
+** [Graph](/diagrams/graph/README.md)
+** [Layer Stack](/diagrams/layer-stack/README.md)
+** [Onion Layers](/diagrams/onion-layers/README.md)
+** [System Layers](/diagrams/system-layers/README.md)
+** [Timeline](/diagrams/timeline/README.md)
+** [Tree Layouts](/diagrams/tree/README.md)
+** [State Machine ](/diagrams/state-machine/README.md)
+** [Markdown support](/features/markdown/README.md)

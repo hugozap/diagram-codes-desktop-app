@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Description">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="./vue.css">
+  <style>
+    .new{
+      background-color: lightyellow;
+      color: black;
+      font-weight: bold;
+      padding: 0.2rem 0.5rem;
+      border: solid 1px black;
+      border-radius: 5px;
+      margin-left: 1rem;
+
+    }
+
+    #updates{
+      padding:0.4rem;
+      position: absolute;
+      z-index: 10;
+      width: 500px;
+      right: 15px;
+      top:5px;
+      background: white;
+      border: solid 1px black;
+      overflow: auto;
+      max-height:80vh;
+    }
+
+    #updates h2{
+      padding: 0.2rem;
+      margin:0;
+    }
+
+    .version-list>li{
+      list-style-type: none;
+    }
+
+    .version-features-list{
+      padding-left: 1rem;
+    }
+
+    .version-number-name{
+      font-weight: bold;
+
+    }
+
+    #current-version{
+      text-align: left;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    #updates-available {
+      display:none;
+      background-color: lightgreen;
+      padding: 0.5rem;
+      font-size: 0.8rem;
+      color: darkgreen;
+    }
+
+    #close-updates {
+      position: absolute;
+      display: block;
+      background: white;
+      padding: 3px;
+      cursor: pointer;
+      top:2px;
+      right:2px;
+    }
+
+    #updates-content{
+      display:block;
+    }
+
+  </style>
+</head>
+<body>
+  <div id="updates">
+    <div id="close-updates">X</div>
+    <div id="current-version"></div>
+    <div id="updates-content">
+      <h2> Latest updates </h2>
+      <div id="updates-available">Updates available</div>
+      <div id="versions-feature-list"></div>
+    </div>
+  </div>
+  <div id="app"></div>
+  
+  <script>
+    window.$docsify = {
+      name: '',
+      repo: '',
+      loadSidebar: true
+    }
+
+    /* Get the versions json changelog and get the current version and greater */
+
+    function getDiagramCodesVersion (){
+      const agent = navigator.userAgent;
+      //Check if it's from diagram codes
+      var parts = agent.split(' ')
+      var id = parts.find((p)=>{
+        return p.indexOf('diagram-codes-studio/') >= 0
+      })
+      if(id){
+        //We have the string diagram-codes-studio/1.0.23
+        return id.split('/')[1]
+      } else {
+        return null
+      }
+    }
+
+    //This method compares 2 semver functions
+    //https://stackoverflow.com/a/16187766
+    function cmpVersions (a, b) {
+        var i, diff;
+        var regExStrip0 = /(\.0+)+$/;
+        var segmentsA = a.replace(regExStrip0, '').split('.');
+        var segmentsB = b.replace(regExStrip0, '').split('.');
+        var l = Math.min(segmentsA.length, segmentsB.length);
+
+        for (i = 0; i < l; i++) {
+            diff = parseInt(segmentsA[i], 10) - parseInt(segmentsB[i], 10);
+            if (diff) {
+                return diff;
+            }
+        }
+        return segmentsA.length - segmentsB.length;
+    }
+
+    //Obtener todas lsa versiones
+    function getVersions(){
+      return window.fetch('https://d1plbtapjewfq8.cloudfront.net/changelog-desktop-user.json?'+(new Date()).getTime())
+      .then(response => response.json()).then(obj => obj.versions)
+    }
+
+    function loadVersionDataAndUpdateUI(){
+      var currentVersion = getDiagramCodesVersion()
+      var fromApp = currentVersion != null;
+
+      getVersions().then(versions => {
+        if(fromApp){
+           versions.forEach(v => {
+          //Marcar las versiones mayores o iguales para diferenciarlas
+          v.isNewOrCurrent = cmpVersions(v.version, currentVersion) > 0
+          })
+        }
+       
+
+        //ordenar de mayor a menor
+        versions.sort((a,b)=>{
+          return cmpVersions(a.version,b.version) * -1
+        })
+
+        const latestVersion = versions[0];
+        const isUserOnLatestVersion = fromApp && cmpVersions(currentVersion, latestVersion.version) >= 0
+
+
+        updateVersionUI(currentVersion, versions, isUserOnLatestVersion, latestVersion,fromApp);
+      })
+    }
+
+    function updateVersionUI(currentVersionString, versions, isUserOnLatestVersion, latestVersion,fromApp) {
+      console.log('currentVersionString',currentVersionString)
+      console.log('versions',versions)
+      console.log('isUserOnLatestVersion',isUserOnLatestVersion)
+      console.log('latestVersion',latestVersion)
+
+      var updatePanel = document.querySelector('#updates')
+      updatePanel.style.display = "block"
+      var labelUpdatesAvailable = document.querySelector('#updates-available')
+      var labelCurrentVersion = document.querySelector("#current-version")
+      var versionsFeaturesList = document.querySelector("#versions-feature-list")
+
+      if(fromApp && !isUserOnLatestVersion){
+        labelUpdatesAvailable && (labelUpdatesAvailable.style.display="block")
+      }
+
+      fromApp && labelCurrentVersion && (labelCurrentVersion.innerHTML = `Current version: ${currentVersionString}`)
+
+      const htmlVersions = `
+        <ul class="version-list">
+          ${versions.map(v => {
+            return `<li>
+              <span class="version-number-name">${v.version} - ${v.name}</span>
+              <ul class="version-features-list">
+                ${v.features.map(f=>{
+                  return `<li class="version-feature">${f}</li>`
+                }).join("")}
+              </ul>
+            </li>`
+          }).join("")}
+        </ul>
+      `
+      versionsFeaturesList && (versionsFeaturesList.innerHTML = htmlVersions)
+    }
+
+    try{
+      document.querySelector("#close-updates").addEventListener('click', ()=>{
+         var panel = document.querySelector("#updates-content")
+         console.log(panel.style.display)
+         panel.style.display =  ["block",""].indexOf(panel.style.display) >= 0 ? "none" : "block"
+      })
+      loadVersionDataAndUpdateUI();
+    }catch(e){
+      console.log(e);
+    }
+
+
+
+  </script>
+  <script src="./docsify.min.js"></script>
+</body>
+</html>
